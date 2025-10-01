@@ -570,10 +570,7 @@ end
 
 -- 检查是否需要切换职业
 function ShouldCycle()
-    -- 如果信用点达到上限，则不切换职业
-    if LimitConfig > 0 and lunarCredits >= LimitConfig then
-        return
-    end
+
     
     -- 检查角色是否处于正常状态
     if Svc.Condition[CharacterCondition.normalConditions] then
@@ -703,9 +700,6 @@ end
 -- 检查是否需要移动到新位置
 function ShouldMove()
     -- 如果信用点达到上限，则不移动
-    if LimitConfig > 0 and lunarCredits >= LimitConfig then
-        return
-    end
     
     -- 初始化最后移动时间
     if lastMoveTime == nil then
@@ -1269,7 +1263,7 @@ RetainerConfig  = Config.Get("雇员探索委托处理")    -- 雇员探索委�
 ResearchConfig  = Config.Get("研究点数缴纳")        -- 研究点数缴纳开关
 AltJobConfig    = Config.Get("使用备用职业")        -- 使用备用职业开关
 RelicJobsConfig = Config.Get("肝武职业循环")        -- 肝武职业循环列表
-DiscardConfig     = Config.Get("自动丢弃物品")      -- 自动丢弃物品清单配置组名称
+DiscardConfig   = Config.Get("自动丢弃物品")      -- 自动丢弃物品清单配置组名称
 
 
 
@@ -1426,10 +1420,7 @@ if JobsConfig.Count > 0 and not HasPlugin("SimpleTweaksPlugin") then
     yield("/echo [Cosmic Helper] 职业循环需要SimpleTweaks插件。脚本将在不切换职业的情况下继续运行。")
     JobsConfig = nil
 end
-if LimitConfig > 0 and not HasPlugin("TextAdvance") then
-    yield("/echo [Cosmic Helper] 月球信用点抽奖需要TextAdvance插件。脚本将在不进行抽奖的情况下继续运行。")
-    LimitConfig = 0
-end
+
 if ResearchConfig and not HasPlugin("TextAdvance") then
     yield("/echo [Cosmic Helper] 研究点数缴纳需要TextAdvance插件。脚本将在不提交研究点数的情况下继续运行。")
     ResearchConfig = 0
@@ -1477,9 +1468,8 @@ while Run_script do
         ShouldRetainer()  -- 雇员处理
     end
     CheckCredits()    --宇宙信用点处理
-    if LimitConfig > 0 then
-        ShouldCredit()  -- 信用点处理
-    end
+    ShouldCredit()  -- 信用点处理
+
     if FailedConfig then
         ShouldReport()  -- 失败任务上报
     end
