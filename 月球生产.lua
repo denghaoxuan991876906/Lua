@@ -1,7 +1,7 @@
 --[=====[
 [[SND Metadata]]
 author: baanderson40 嗨呀
-version: 1.3.4
+version: 1.3.5
 description: |
   支持: 
   主要功能：
@@ -73,7 +73,7 @@ configs:
 --]=====]
 
 -- 导入必要的系统模块
-import("System.Numerics") 
+import("System.Numerics")
 
 --[[
 ********************************************************************************
@@ -98,7 +98,6 @@ if Svc.ClientState.TerritoryType == 1237 then -- 憧憬湾
         Vector3(5.471, 1.660, 5.257), -- 传唤铃（内环）
         Vector3(-6.257, 1.660, 6.100), -- 研明威（内环）
         Vector3(-5.919, 1.660, -5.678), -- 贡献榜（内环）
-        Vector3(16.6, 1.7, 16.1),--"梅苏艾东克"
     }
 elseif Svc.ClientState.TerritoryType == 1291 then --琉璃星
     SpotPos = {
@@ -438,7 +437,7 @@ function CheckCredits()
             -- 检查是否启用了自动丢弃物品功能
             if DiscardConfig and DiscardConfig ~= "" then
                 -- 自动丢弃清单中的物品
-                yield(string.format("/pdrdiscard %s", DiscardConfig))
+                yield("/pdrdiscard "..DiscardConfig)
             end
             yield("/wait 4")
         end
@@ -1254,7 +1253,6 @@ JumpConfig      = Config.Get("遇阻时跳跃")          -- 遇阻时跳跃开�
 isTP            = Config.Get("TP")                  -- TP功能开关
 tpStr           = Config.Get("TP指令")              -- TP指令内容
 JobsConfig      = Config.Get("职业循环列表")        -- 职业循环列表
---LimitConfig     = Config.Get("月球信用点上限")      -- 月球信用点上限
 FailedConfig    = Config.Get("上报失败任务")        -- 上报失败任务开关
 Ex4TimeConfig   = Config.Get("EX+4小时限时任务")    -- EX+4小时限时任务开关
 Ex2TimeConfig   = Config.Get("EX+2小时限时任务")    -- EX+2小时限时任务开关
