@@ -7,10 +7,11 @@ description: |
   主要功能：
     -移动中遇阻时自动执行跳跃
     -达成经验值或职业积分目标后自动切换职业（基于ICE设置）
-    -达到月球信用点上限时暂停任务，并将信用点用于抽奖
+    -使用DR自动好运道模块进行抽奖,不再需要移动到抽奖位置
     -可选择在移动前于随机位置等待设定时长
     -自动缴纳宇宙研究点数进行肝武升级
     -自动购买魔晶石 满30000自动购买
+    -添加自动丢弃物品功能  请自行设置好DR自动丢弃物品的清单
 plugin_dependencies:
 - ICE
 - vnavmesh
@@ -28,12 +29,10 @@ configs:
     description: |
       当达到经验值或职业积分阈值时循环切换的职业列表（具体取决于ICE中的设置）。输入职业简称或全称并按回车，每行一个职业。请在Simple Tweaks插件中启用"切换职业"命令并保持其为默认设置。留空则禁用职业循环功能
     default: []
-  月球信用点上限:
+  自动丢弃物品:
     description: |
-      执行抽奖前允许积累的月球信用点最大数量。与ICE中的"月球信用点停止阈值"设置保持一致以实现同步行为。请在ICE设置的"抽奖轮盘"中启用抽奖功能。设为0则取消限制
-    default: 0
-    min: 0
-    max: 10000
+      提供DR自动丢弃物品清单的配置组名称,为空则不开启功能,在每次换取魔晶石时自动丢弃清单中的物品
+    default: ""
   上报失败任务:
     description: |
       启用后上报未达到评分阶位的失败任务
@@ -436,7 +435,12 @@ function CheckCredits()
             end
             
             yield("/callback ShopExchangeCurrency true -1")
-            yield("/wait 2")
+            -- 检查是否启用了自动丢弃物品功能
+            if DiscardConfig and DiscardConfig ~= "" then
+                -- 自动丢弃清单中的物品
+                yield(string.format("/pdrdiscard %s", DiscardConfig))
+            end
+            yield("/wait 4")
         end
         -- 抽奖结束后处理
         if not Svc.Condition[CharacterCondition.occupiedInQuestEvent] then
@@ -1256,7 +1260,7 @@ JumpConfig      = Config.Get("遇阻时跳跃")          -- 遇阻时跳跃开�
 isTP            = Config.Get("TP")                  -- TP功能开关
 tpStr           = Config.Get("TP指令")              -- TP指令内容
 JobsConfig      = Config.Get("职业循环列表")        -- 职业循环列表
-LimitConfig     = Config.Get("月球信用点上限")      -- 月球信用点上限
+--LimitConfig     = Config.Get("月球信用点上限")      -- 月球信用点上限
 FailedConfig    = Config.Get("上报失败任务")        -- 上报失败任务开关
 Ex4TimeConfig   = Config.Get("EX+4小时限时任务")    -- EX+4小时限时任务开关
 Ex2TimeConfig   = Config.Get("EX+2小时限时任务")    -- EX+2小时限时任务开关
@@ -1265,7 +1269,9 @@ RetainerConfig  = Config.Get("雇员探索委托处理")    -- 雇员探索委�
 ResearchConfig  = Config.Get("研究点数缴纳")        -- 研究点数缴纳开关
 AltJobConfig    = Config.Get("使用备用职业")        -- 使用备用职业开关
 RelicJobsConfig = Config.Get("肝武职业循环")        -- 肝武职业循环列表
---CreditsConif    = Config.Get("宇宙信用点上限")
+DiscardConfig     = Config.Get("自动丢弃物品")      -- 自动丢弃物品清单配置组名称
+
+
 
 -- 状态变量
 Run_script        = true               -- 脚本运行标志
