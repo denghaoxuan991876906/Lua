@@ -1260,7 +1260,12 @@ function tpOnce()
         tpOnceFlag = false  -- 执行后标记为已执行
     end
 end
-
+-- 开启DR插件
+function DRInit()
+    yield("/pdr toggle AutoDiscard")
+    yield("/pdr toggle AutoRequestItemSubmit")
+    yield("/pdr toggle AutoCosmicFortune")
+end
 --[[
 ********************************************************************************
 *                                脚本设置                                       *
@@ -1465,6 +1470,7 @@ yield("/tweaks enable EquipJobCommand true")
 currentPj = 0
 -- 主循环
 tpOnceFlag = true  -- 初始TP标志
+DRInit()  -- 开启DR插件
 while Run_script do
     currentCredits = Inventory.GetItemCount(CreditItemID)
     currentPj = Inventory.GetItemCount(47594)
