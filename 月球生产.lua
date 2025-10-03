@@ -1262,9 +1262,9 @@ function tpOnce()
 end
 -- 开启DR插件
 function DRInit()
-    yield("/pdr toggle AutoDiscard")
-    yield("/pdr toggle AutoRequestItemSubmit")
-    yield("/pdr toggle AutoCosmicFortune")
+    yield("/pdr load AutoDiscard")
+    yield("/pdr load AutoRequestItemSubmit")
+    yield("/pdr load AutoCosmicFortune")
 end
 --[[
 ********************************************************************************
