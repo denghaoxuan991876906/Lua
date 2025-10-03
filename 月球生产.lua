@@ -1,9 +1,8 @@
 --[=====[
 [[SND Metadata]]
-author: baanderson40 嗨呀
+author: "baanderson40\嗨呀"
 version: 1.3.7
-description: |
-  支持: 
+description: >-
   主要功能：
     -移动中遇阻时自动执行跳跃
     -达成经验值或职业积分目标后自动切换职业（基于ICE设置）
@@ -18,12 +17,15 @@ configs:
   遇阻时跳跃:
     description: 当角色在同一位置卡住时间过长时自动执行跳跃
     default: false
+    type: boolean
   TP:
     description: 是否使用TP功能 注意tp位置憧憬湾和琉璃星不同, 切换地图时需要手动调整tp位置
     default: false
+    type: boolean
   TP指令:
     description: 提供你想要使用的tp指令 如 /aetp (x,y,z)   建议tp到一个精确坐标 如使用棍哥的tp指令 需要在stp的自定义同义命令功能中将横杠转掉 如i-ching-teleport 转为 ichingtp 再提供 /ichingtp x y z
     default: ""
+    type: string
   职业循环列表:
     description: |
       当达到经验值或职业积分阈值时循环切换的职业列表（具体取决于ICE中的设置）。输入职业简称或全称并按回车，每行一个职业。请在Simple Tweaks插件中启用"切换职业"命令并保持其为默认设置。留空则禁用职业循环功能
@@ -32,28 +34,34 @@ configs:
     description: |
       启用后换取魔晶石时每次自动换取法恩娜探索计划证书
     default: false
+    type: boolean
   自动丢弃物品:
     description: |
       提供DR自动丢弃物品清单的配置组名称,为空则不开启功能,在每次换取魔晶石时自动丢弃清单中的物品
     default: ""
+    type: string
   上报失败任务:
     description: |
       启用后上报未达到评分阶位的失败任务
     default: false
+    type: boolean
   EX+4小时限时任务:
     description: |
       启用后将根据当前EX+4小时限时任务自动切换制作职业（循环顺序：铸甲匠→雕金匠→制革匠→织布匠→刻木匠→锻铁匠→重复）
     default: false
+    type: boolean
   EX+2小时限时任务:
     description: |
       启用后将根据当前EX+2小时限时任务自动切换制作职业（循环顺序：制革匠→织布匠→炼金术士→烹调师→铸甲匠→雕金匠→重复）
     default: false
+    type: boolean
   点位停留时长:
     description: |
       在随机移动到下个点位前的停留时间（分钟）。设为0则禁用自动移动功能
     default: 0
     min: 0
     max: 1440
+    type: int
   雇员探索委托处理:
     description: |
       当雇员探索完成时暂停宇宙任务。离开后不会返回月面基地。选择"停用"可关闭此功能
@@ -64,10 +72,12 @@ configs:
     description: |
       启用后自动缴纳宇宙研究点数进行肝武升级
     default: false
+    type: boolean
   使用备用职业:
     description: |
       在缴纳研究点数时使用战士职业。若工具已保存至套装则无效
     default: false
+    type: boolean
   肝武职业循环:
     description: |
       当肝武工具完成后循环切换的职业列表。不需包含起始/当前职业，从下一个目标职业开始列出。输入职业简称或全称并按回车，每行一个职业。请在Simple Tweaks插件中启用"切换职业"命令并保持其为默认设置。留空则禁用职业循环功能
