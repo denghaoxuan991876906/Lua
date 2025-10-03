@@ -1,13 +1,12 @@
 --[=====[
 [[SND Metadata]]
 author: baanderson40 嗨呀
-version: 1.3.5
+version: 1.3.7
 description: |
   支持: 
   主要功能：
     -移动中遇阻时自动执行跳跃
     -达成经验值或职业积分目标后自动切换职业（基于ICE设置）
-    -使用DR自动好运道模块进行抽奖,不再需要移动到抽奖位置
     -可选择在移动前于随机位置等待设定时长
     -自动缴纳宇宙研究点数进行肝武升级
     -自动购买魔晶石 满30000自动购买
@@ -29,6 +28,10 @@ configs:
     description: |
       当达到经验值或职业积分阈值时循环切换的职业列表（具体取决于ICE中的设置）。输入职业简称或全称并按回车，每行一个职业。请在Simple Tweaks插件中启用"切换职业"命令并保持其为默认设置。留空则禁用职业循环功能
     default: []
+  自动换取法恩娜探索计划证书:
+    description: |
+      启用后换取魔晶石时每次自动换取法恩娜探索计划证书
+    default: false
   自动丢弃物品:
     description: |
       提供DR自动丢弃物品清单的配置组名称,为空则不开启功能,在每次换取魔晶石时自动丢弃清单中的物品
@@ -344,78 +347,82 @@ function toNumber(s)
 end
 
 -- 工作函数集合
+function MoveToShop()
+    curPos = Svc.ClientState.LocalPlayer.Position  -- 获取当前位置
+    local creditsNpcName = (Svc.ClientState.TerritoryType == SinusTerritory) and SinusCreditsNpc.name or PhaennaCreditsNpc.name
+    -- 根据当前所在地图处理导航
+    if Svc.ClientState.TerritoryType == SinusTerritory then  -- 憧憬湾
+        -- 如果距离传送点太远，则返回
+        if DistanceBetweenPositions(curPos, SinusGateHub) > 75 then
+            Dalamud.Log("[Cosmic Helper] 宇宙返回")
+            yield('/gaction 任务指令1')
+            sleep(5)
+        end
+        -- 等待角色状态稳定
+        while Svc.Condition[CharacterCondition.betweenAreas] or Svc.Condition[CharacterCondition.casting] do
+            sleep(.5)
+        end
+        -- 导航到梅苏艾东克（信用点NPC）
+        IPC.vnavmesh.PathfindAndMoveTo(SinusCreditsNpc.position, false)
+        Dalamud.Log("[Cosmic Helper] 去找梅苏艾东克")
+        sleep(1)
+        -- 监控导航状态，到达附近后停止
+        while IPC.vnavmesh.PathfindInProgress() or IPC.vnavmesh.IsRunning() do
+            sleep(.02)
+            curPos = Svc.ClientState.LocalPlayer.Position
+            if DistanceBetweenPositions(curPos, SinusCreditsNpc.position) < 5 then
+                Dalamud.Log("[Cosmic Helper] 距离梅苏艾东克够近了，停止导航.")
+                IPC.vnavmesh.Stop()
+            end
+        end
+    elseif Svc.ClientState.TerritoryType == PhaennaTerritory then  -- 琉璃星
+        -- 如果距离传送点太远，则返回
+        if DistanceBetweenPositions(curPos, PhaennaGateHub) > 75 then
+            Dalamud.Log("[Cosmic Helper] 宇宙返回")
+            yield('/gaction 任务指令1')
+            sleep(5)
+        end
+        -- 等待角色状态稳定
+        while Svc.Condition[CharacterCondition.betweenAreas] or Svc.Condition[CharacterCondition.casting] do
+            sleep(.5)
+        end
+        -- 导航到梅苏艾东克（信用点NPC）
+        IPC.vnavmesh.PathfindAndMoveTo(PhaennaCreditsNpc.position, false)
+        Dalamud.Log("[Cosmic Helper] 去找梅苏艾东克")
+        sleep(1)
+        -- 监控导航状态，到达附近后停止
+        while IPC.vnavmesh.PathfindInProgress() or IPC.vnavmesh.IsRunning() do
+            sleep(.02)
+            curPos = Svc.ClientState.LocalPlayer.Position
+            if DistanceBetweenPositions(curPos, PhaennaCreditsNpc.position) < 5 then
+                Dalamud.Log("[Cosmic Helper] 距离梅苏艾东克够近了，停止导航.")
+                IPC.vnavmesh.Stop()
+            end
+        end
+    end
+    -- 选中信用点NPC并交互
+    local e = Entity.GetEntityByName(creditsNpcName)
+    if e then
+        Dalamud.Log(string.format("[Cosmic Helper] 选中: %s", creditsNpcName))
+        e:SetAsTarget()
+    end
+    if Entity.Target and Entity.Target.Name == creditsNpcName then
+        Dalamud.Log(string.format("[Cosmic Helper] 交互: %s", creditsNpcName))
+        e:Interact()
+        sleep(1)
+    end
+end
 -- 检查宇宙信用点
 function CheckCredits()
     if currentCredits >= CreditThreshold and Svc.Condition[CharacterCondition.normalConditions] and not Player.IsBusy then
-        Dalamud.Log(string.format("[CosmicCredit] 信用点已达到阈值！准备停止探索并开始兑换。"))
-        curPos = Svc.ClientState.LocalPlayer.Position  -- 获取当前位置
+        Dalamud.Log(string.format("[CosmicCredit] 宇宙信用点已达到阈值！准备停止探索并开始兑换。"))
         yield('/ice stop')
-        local creditsNpcName = (Svc.ClientState.TerritoryType == SinusTerritory) and SinusCreditsNpc.name or PhaennaCreditsNpc.name
-        -- 根据当前所在地图处理导航
-        if Svc.ClientState.TerritoryType == SinusTerritory then  -- 憧憬湾
-            -- 如果距离传送点太远，则返回
-            if DistanceBetweenPositions(curPos, SinusGateHub) > 75 then
-                Dalamud.Log("[Cosmic Helper] 宇宙返回")
-                yield('/gaction 任务指令1')
-                sleep(5)
-            end
-            -- 等待角色状态稳定
-            while Svc.Condition[CharacterCondition.betweenAreas] or Svc.Condition[CharacterCondition.casting] do
-                sleep(.5)
-            end
-            -- 导航到梅苏艾东克（信用点NPC）
-            IPC.vnavmesh.PathfindAndMoveTo(SinusCreditsNpc.position, false)
-            Dalamud.Log("[Cosmic Helper] 去找梅苏艾东克")
-            sleep(1)
-            -- 监控导航状态，到达附近后停止
-            while IPC.vnavmesh.PathfindInProgress() or IPC.vnavmesh.IsRunning() do
-                sleep(.02)
-                curPos = Svc.ClientState.LocalPlayer.Position
-                if DistanceBetweenPositions(curPos, SinusCreditsNpc.position) < 5 then
-                    Dalamud.Log("[Cosmic Helper] 距离梅苏艾东克够近了，停止导航.")
-                    IPC.vnavmesh.Stop()
-                end
-            end
-        elseif Svc.ClientState.TerritoryType == PhaennaTerritory then  -- 琉璃星
-            -- 如果距离传送点太远，则返回
-            if DistanceBetweenPositions(curPos, PhaennaGateHub) > 75 then
-                Dalamud.Log("[Cosmic Helper] 宇宙返回")
-                yield('/gaction 任务指令1')
-                sleep(5)
-            end
-            -- 等待角色状态稳定
-            while Svc.Condition[CharacterCondition.betweenAreas] or Svc.Condition[CharacterCondition.casting] do
-                sleep(.5)
-            end
-            -- 导航到梅苏艾东克（信用点NPC）
-            IPC.vnavmesh.PathfindAndMoveTo(PhaennaCreditsNpc.position, false)
-            Dalamud.Log("[Cosmic Helper] 去找梅苏艾东克")
-            sleep(1)
-            -- 监控导航状态，到达附近后停止
-            while IPC.vnavmesh.PathfindInProgress() or IPC.vnavmesh.IsRunning() do
-                sleep(.02)
-                curPos = Svc.ClientState.LocalPlayer.Position
-                if DistanceBetweenPositions(curPos, PhaennaCreditsNpc.position) < 5 then
-                    Dalamud.Log("[Cosmic Helper] 距离梅苏艾东克够近了，停止导航.")
-                    IPC.vnavmesh.Stop()
-                end
-            end
-        end
-        -- 选中信用点NPC并交互
-        local e = Entity.GetEntityByName(creditsNpcName)
-        if e then
-            Dalamud.Log(string.format("[Cosmic Helper] 选中: %s", creditsNpcName))
-            e:SetAsTarget()
-        end
-        if Entity.Target and Entity.Target.Name == creditsNpcName then
-            Dalamud.Log(string.format("[Cosmic Helper] 交互: %s", creditsNpcName))
-            e:Interact()
-            sleep(1)
-        end
+        MoveToShop()
         if IsAddonReady("SelectIconString") then
             yield("/callback SelectIconString true 1")  -- 选择第二个选项
             sleep(1)
         end
+        -- 换魔晶石
         if Addons.GetAddon("ShopExchangeCurrency").Ready then
             yield(string.format("/callback ShopExchangeCurrency true 4 -1 1 %d", ShopCategoryIndex))
             yield("/wait 2")
@@ -434,13 +441,36 @@ function CheckCredits()
             end
             
             yield("/callback ShopExchangeCurrency true -1")
-            -- 检查是否启用了自动丢弃物品功能
-            if DiscardConfig and DiscardConfig ~= "" then
-                -- 自动丢弃清单中的物品
-                yield("/pdrdiscard "..DiscardConfig)
+        end
+        -- 检查是否启用了自动换取法恩娜探索计划证书功能
+        if AutoExchangePjConfig and AutoExchangePjConfig then
+            -- 自动换取法恩娜探索计划证书
+            local quantityToChange = math.floor(currentPj / 900)
+
+            if IsAddonReady("SelectIconString") then
+                yield("/callback SelectIconString true 2")
             end
+            if quantityToChange > 0 then
+                for i = 1, quantityToChange do
+                    if IsAddonReady("ShopExchangeItem") then
+                        yield(string.format("/callback ShopExchangeItem true 0 1 9"))
+                        yield("/wait 2")
+                    end
+                    if IsAddonReady("ShopExchangeItemDialog") then
+                        yield("/callback ShopExchangeItemDialog true 0")
+                        yield("/wait 2")
+                    end
+                end
+            end
+            yield("/callback ShopExchangeItem true -1")
+        end
+        -- 检查是否启用了自动丢弃物品功能
+        if DiscardConfig and DiscardConfig ~= "" then
+            -- 自动丢弃清单中的物品
+            yield("/pdrdiscard "..DiscardConfig)
             yield("/wait 4")
         end
+        
         -- 抽奖结束后处理
         if not Svc.Condition[CharacterCondition.occupiedInQuestEvent] then
             job = Player.Job
@@ -480,18 +510,7 @@ function CheckCredits()
         end
     end
 end
--- 检查是否需要处理月球信用点（达到上限时进行抽奖）
-function ShouldCredit()
-    -- 检查是否达到信用点上限且角色处于正常状态
-    if lunarCredits >= 1000 and Svc.Condition[CharacterCondition.normalConditions] and not Player.IsBusy then
-        -- 如果自动对话未启用，则启用它
-        yield("/pdr cosfortune ()")
-        sleep(2)
-        -- 重新开启ICE
-        Dalamud.Log("[Cosmic Helper] 开启 ICE")
-        yield("/ice start")
-    end
-end
+
 
 -- 使用TP功能
 function useTP()
@@ -1262,7 +1281,7 @@ ResearchConfig  = Config.Get("研究点数缴纳")        -- 研究点数缴纳�
 AltJobConfig    = Config.Get("使用备用职业")        -- 使用备用职业开关
 RelicJobsConfig = Config.Get("肝武职业循环")        -- 肝武职业循环列表
 DiscardConfig   = Config.Get("自动丢弃物品")      -- 自动丢弃物品清单配置组名称
-
+AutoExchangePjConfig = Config.Get("自动换取法恩娜探索计划证书")  -- 自动换取法恩娜探索计划证书开关
 
 
 -- 状态变量
@@ -1443,16 +1462,12 @@ end
 
 -- 启用插件选项
 yield("/tweaks enable EquipJobCommand true")
-
+currentPj = 0
 -- 主循环
 tpOnceFlag = true  -- 初始TP标志
 while Run_script do
-    -- 获取当前月球信用点数量
-    if IsAddonExists("WKSHud") then
-        lunarCredits = Addons.GetAddon("WKSHud"):GetNode(1, 15, 17, 3).Text:gsub("[^%d]", "")
-        lunarCredits = tonumber(lunarCredits)
-    end
     currentCredits = Inventory.GetItemCount(CreditItemID)
+    currentPj = Inventory.GetItemCount(47594)
     --yield("/echo [Cosmic Helper] 现在宇宙信用点数量:".. tostring(currentCredits))
     -- 执行各功能检查
     if JumpConfig then
@@ -1466,8 +1481,6 @@ while Run_script do
         ShouldRetainer()  -- 雇员处理
     end
     CheckCredits()    --宇宙信用点处理
-    ShouldCredit()  -- 信用点处理
-
     if FailedConfig then
         ShouldReport()  -- 失败任务上报
     end
