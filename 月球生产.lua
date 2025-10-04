@@ -8,7 +8,7 @@ description: >-
     - "达成经验值或职业积分目标后自动切换职业（基于ICE设置）"
     - "可选择在移动前于随机位置等待设定时长"
     - "自动缴纳宇宙研究点数进行肝武升级"
-    - "自动购买魔晶石 满30000自动购买"
+    - "自动购买魔晶石 满20000自动购买"
     - "添加自动丢弃物品功能  请自行设置好DR自动丢弃物品的清单"
 plugin_dependencies:
 - ICE
@@ -439,6 +439,9 @@ function MoveToShop()
         sleep(1)
     end
 end
+function Echo(msg)
+    Dalamud.Log(string.format("[Cosmic Helper] %s", msg))
+end
 -- 检查宇宙信用点
 function CheckCredits()
     if currentCredits >= CreditThreshold and Svc.Condition[CharacterCondition.normalConditions] and not Player.IsBusy then
@@ -447,11 +450,13 @@ function CheckCredits()
         MoveToShop()
         if IsAddonReady("SelectIconString") then
             yield("/callback SelectIconString true 1")  -- 选择第二个选项
+            Echo("选择第二个选项")
             sleep(1)
         end
         -- 换魔晶石
         if Addons.GetAddon("ShopExchangeCurrency").Ready then
             yield(string.format("/callback ShopExchangeCurrency true 4 -1 1 %d", ShopCategoryIndex))
+            Echo("选择魔晶石")
             yield("/wait 2")
 
             local currentCredits = Inventory.GetItemCount(CreditItemID)
@@ -466,16 +471,21 @@ function CheckCredits()
                      yield("/wait 2")
                 end
             end
+            Echo("兑换完成")
             
             yield("/callback ShopExchangeCurrency true -1")
+            Echo("退出商店")
         end
         -- 检查是否启用了自动换取法恩娜探索计划证书功能
         if AutoExchangePjConfig and AutoExchangePjConfig then
+            MoveToShop()
+            Echo("自动换取法恩娜探索计划证书")
             -- 自动换取法恩娜探索计划证书
             local quantityToChange = math.floor(currentPj / 900)
 
             if IsAddonReady("SelectIconString") then
                 yield("/callback SelectIconString true 2")
+                sleep(1)
             end
             if quantityToChange > 0 then
                 for i = 1, quantityToChange do
@@ -489,12 +499,15 @@ function CheckCredits()
                     end
                 end
             end
+            Echo("兑换完成")
             yield("/callback ShopExchangeItem true -1")
+            Echo("退出商店")
         end
         -- 检查是否启用了自动丢弃物品功能
         if DiscardConfig and DiscardConfig ~= "" then
             -- 自动丢弃清单中的物品
             yield("/pdrdiscard "..DiscardConfig)
+            Echo("自动丢弃清单中的物品")
             yield("/wait 4")
         end
         
@@ -1412,7 +1425,7 @@ end
 
 -- 监控的物品和阈值
 CreditItemID = 45690      -- 宇宙信用点的物品ID
-CreditThreshold = 30000   -- 触发兑换的数量阈值
+CreditThreshold = 20000   -- 触发兑换的数量阈值
 -- 要兑换的物品信息
 ItemToBuyName = "名匠魔晶石拾壹型"
 ItemPrice = 450           -- 物品单价
